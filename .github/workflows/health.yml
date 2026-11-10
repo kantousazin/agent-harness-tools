@@ -1,0 +1,33 @@
+name: Weekly health check
+
+# Scheduled runs on a public repository use the free standard runners.
+# This job re-runs the full test suite and the workflow lint once a week
+# so a silent breakage (new Python, new actionlint rules) is noticed
+# even in weeks with no commits.
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pytest
+        run: python -m pip install --upgrade pip pytest
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Install actionlint
+        run: |
+          mkdir -p "$RUNNER_TEMP/actionlint"
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.7 "$RUNNER_TEMP/actionlint"
+      - name: Lint all workflows in this repo
+        run: '"$RUNNER_TEMP/actionlint/actionlint" -color'
