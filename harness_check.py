@@ -351,6 +351,15 @@ def cmd_receipt(task_dir: Path, args) -> int:
 
 
 def main() -> int:
+    # Report lines can contain non-ASCII markers; on consoles with a
+    # legacy codepage (e.g. Windows cp1252) printing them would raise
+    # UnicodeEncodeError halfway through the report. Force UTF-8 with
+    # replacement so the report always completes.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("lint", "audit", "receipt"):
